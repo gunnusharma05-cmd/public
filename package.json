@@ -1,0 +1,36 @@
+{
+  "name": "erasure",
+  "version": "1.0.0",
+  "description": "A sentient narrative experience that reads you back",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "concurrently \"node server.js\" \"vite\"",
+    "build": "node ./node_modules/vite/bin/vite.js build",
+    "preview": "node ./node_modules/vite/bin/vite.js preview",
+    "install-deps": "npm install"
+  },
+  "dependencies": {
+    "@tensorflow-models/coco-ssd": "^2.2.3",
+    "@tensorflow/tfjs": "^4.11.0",
+    "@vladmandic/face-api": "^1.7.8",
+    "compromise": "^14.10.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "firebase": "^10.0.0",
+    "gsap": "^3.12.2",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "three": "^0.181.2",
+    "tone": "^14.8.49"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.0.0",
+    "concurrently": "^8.2.2",
+    "vite": "^5.0.0"
+  }
+}

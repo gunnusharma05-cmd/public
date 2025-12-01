@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERASURE — A Sentient Narrative Experience</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0a0a15 0%, #1a0a2e 50%, #0f0f1e 100%);
+        }
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #canvas {
+            flex: 1;
+            display: block;
+        }
+
+        #ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 25, 0.98);
+            border: 2px solid #0ff;
+            padding: 3rem;
+            max-width: 700px;
+            text-align: center;
+            pointer-events: auto;
+            z-index: 1000;
+            font-size: 1.2rem;
+            line-height: 1.8;
+            border-radius: 20px;
+            box-shadow: 0 0 60px rgba(0, 255, 255, 0.3), inset 0 0 60px rgba(0, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            animation: modalEntry 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes modalEntry {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .modal h2 {
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, #0ff, #0f0, #0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            letter-spacing: 2px;
+        }
+
+        .modal p {
+            margin: 0.8rem 0;
+            color: #ccc;
+            font-size: 1.1rem;
+        }
+
+        .modal button {
+            background: linear-gradient(135deg, #0ff, #0f0);
+            color: #000;
+            border: none;
+            padding: 1rem 2.5rem;
+            margin: 1rem 0.5rem;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .modal button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 40px rgba(0, 255, 0, 0.8);
+            background: linear-gradient(135deg, #0f0, #0ff);
+        }
+
+        .modal button:active {
+            transform: translateY(-1px);
+        }
+
+        /* Dream Features - Animations */
+        @keyframes fadeInOut {
+            0% {
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        @keyframes breathe {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+
+            50% {
+                transform: scale(1.02);
+                opacity: 1;
+            }
+        }
+
+        @keyframes temporalGlitch {
+
+            0%,
+            100% {
+                filter: none;
+            }
+
+            50% {
+                filter: blur(2px) brightness(0.6);
+            }
+        }
+
+        @keyframes metamorphicShift {
+            0% {
+                filter: hue-rotate(0deg);
+            }
+
+            100% {
+                filter: hue-rotate(360deg);
+            }
+        }
+
+        /* NEW: Glow pulse effect */
+        @keyframes glowPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 40px rgba(0, 255, 255, 0.8);
+            }
+        }
+
+        /* NEW: Floating animation */
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        /* NEW: Shimmer effect */
+        @keyframes shimmer {
+            0% {
+                background-position: -1000px 0;
+            }
+
+            100% {
+                background-position: 1000px 0;
+            }
+        }
+
+        /* NEW: Spiral rotation */
+        @keyframes spiralRotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #ui.breathing {
+            animation: breathe 3s ease-in-out infinite;
+        }
+
+        #webcam {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 120px;
+            height: 90px;
+            border: 2px solid #0ff;
+            pointer-events: auto;
+            z-index: 500;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            animation: glowPulse 3s ease-in-out infinite;
+        }
+
+        #stats {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(10, 10, 25, 0.9);
+            border: 2px solid #0ff;
+            border-radius: 15px;
+            padding: 1.2rem;
+            font-size: 0.85rem;
+            z-index: 500;
+            pointer-events: none;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1px;
+        }
+
+        #stats div {
+            margin: 0.4rem 0;
+            color: #0ff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        max-width: 250px;
+        }
+
+        .stat-row {
+            margin: 0.3rem 0;
+            font-family: monospace;
+        }
+
+        .stat-label {
+            color: #0ff;
+        }
+
+        .stat-value {
+            color: #0f0;
+            float: right;
+        }
+
+        #emotionDisplay {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #0ff;
+            padding: 1rem;
+            z-index: 500;
+            pointer-events: none;
+        }
+
+        .emotion-bar {
+            width: 200px;
+            height: 20px;
+            background: #111;
+            border: 1px solid #0ff;
+            margin: 0.5rem 0;
+            overflow: hidden;
+        }
+
+        .emotion-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f00, #ff0, #0f0);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        #notification {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #f0f;
+            padding: 1rem;
+            max-width: 300px;
+            z-index: 500;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* ===== NEW BEAUTIFUL 3D UI COMPONENTS ===== */
+
+        /* Beautiful title styling */
+        #title {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+            z-index: 500;
+        }
+
+        #title h1 {
+            font-size: 4rem;
+            letter-spacing: 8px;
+            background: linear-gradient(90deg, #0ff, #0f0, #f0f, #0ff);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 6s ease infinite, float 4s ease-in-out infinite;
+            text-shadow: 0 0 50px rgba(0, 255, 255, 0.5);
+            margin: 0;
+        }
+
+        @keyframes gradientShift {
+
+            0%,
+            100% {
+                background-position: 0% center;
+            }
+
+            50% {
+                background-position: 100% center;
+            }
+        }
+
+        #title p {
+            font-size: 1.2rem;
+            color: #0ff;
+            margin-top: 1rem;
+            animation: fadeInOut 4s ease-in-out infinite;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            letter-spacing: 2px;
+        }
+
+        /* Glitch text effect */
+        .glitch-text {
+            position: relative;
+            color: #0ff;
+            text-shadow:
+                -2px 0 #f0f,
+                2px 0 #0f0,
+                0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        /* Neon border effects */
+        .neon-border {
+            border: 2px solid #0ff;
+            box-shadow: 0 0 10px #0ff, inset 0 0 10px rgba(0, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+
+        /* Button group styling */
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        /* Responsive improvements */
+        @media (max-width: 768px) {
+            #title h1 {
+                font-size: 2.5rem;
+                letter-spacing: 4px;
+            }
+
+            .modal {
+                max-width: 90vw;
+                padding: 2rem;
+            }
+
+            #stats {
+                font-size: 0.75rem;
+                padding: 0.8rem;
+            }
+        }
+    </style>
+  <script type="module" crossorigin src="/assets/index-D7qfZ7kD.js"></script>
+</head>
+
+<body>
+    <div id="container">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <div id="ui">
+        <div id="stats"></div>
+        <video id="webcam" autoplay playsinline muted></video>
+        <div id="emotionDisplay"></div>
+        <div id="notification" style="display: none;"></div>
+    </div>
+
+    <!-- Main App Entry Point - Module Bundled by Vite -->
+</body>
+
+</html>
