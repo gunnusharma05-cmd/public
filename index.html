@@ -834,6 +834,9 @@
             </div>
         </div>
 
+        <!-- Background music: alex_theme.mp3 (looping) -->
+        <audio id="alex-bgm" src="./public/sounds/alex_theme.mp3" loop style="display:none"></audio>
+
         <!-- Emotion Display -->
         <div id="emotionDisplay" style="display: none;">
             <div style="margin-bottom: 0.3rem; font-size: 0.8rem;">happy</div>
@@ -871,9 +874,77 @@
 
         <!-- Story Display -->
         <div id="story-display"></div>
+                width: 100%;
+                padding: 0.35rem 0.5rem;
+                margin-bottom: 0.4rem;
+                border-radius: 999px;
+                border: 1px solid rgba(0,255,255,0.6);
+                background: rgba(3,7,18,0.9);
+                color: #0ff;
+                font-family: inherit;
+                font-size: 0.75rem;
+                outline: none;
+            " />
 
-        <!-- Webcam for emotion detection -->
-        <video id="webcam" autoplay playsinline muted style="display: none;"></video>
+            <button onclick="window.awakenAlex()" style="
+                width: 100%;
+                padding: 0.4rem 0.6rem;
+                margin-bottom: 0.6rem;
+                border-radius: 999px;
+                border: 0;
+                cursor: pointer;
+                background: linear-gradient(135deg,#0ff,#0f0);
+                color: #000;
+                font-weight: bold;
+                font-size: 0.78rem;
+                letter-spacing: 1px;
+                text-transform: uppercase;
+                box-shadow: 0 0 18px rgba(0,255,255,0.8);
+            ">Awaken Alex</button>
+
+            <input id="alexUserMessage" type="text" placeholder="Whisper something to Alex..." style="
+                width: 100%;
+                padding: 0.35rem 0.5rem;
+                margin-bottom: 0.35rem;
+                border-radius: 10px;
+                border: 1px solid rgba(0,255,255,0.4);
+                background: rgba(3,7,18,0.9);
+                color: #0ff;
+                font-family: inherit;
+                font-size: 0.75rem;
+                outline: none;
+            " />
+
+            <div style="display:flex;gap:0.4rem;">
+                <button onclick="window.askAlexMessage()" style="
+                    flex: 1;
+                    padding: 0.35rem 0.6rem;
+                    border-radius: 999px;
+                    border: 0;
+                    cursor: pointer;
+                    background: rgba(0,255,255,0.16);
+                    color: #0ff;
+                    font-weight: bold;
+                    font-size: 0.78rem;
+                    letter-spacing: 1px;
+                    text-transform: uppercase;
+                    box-shadow: 0 0 12px rgba(0,255,255,0.4);
+                ">Ask Alex</button>
+                <button onclick="window.alexStartMic && window.alexStartMic()" title="Speak to Alex" style="
+                    width: 38px;
+                    padding: 0.35rem;
+                    border-radius: 999px;
+                    border: 0;
+                    cursor: pointer;
+                    background: rgba(239,68,68,0.22);
+                    color: #fee2e2;
+                    font-weight: bold;
+                    font-size: 0.78rem;
+                    box-shadow: 0 0 12px rgba(239,68,68,0.5);
+                ">🎙</button>
+            </div>
+
+        </div>
 
         <!-- Dashboard Proceed button (initially hidden, controlled by app.js) -->
         <button id="proceedButton" style="
@@ -899,13 +970,6 @@
             Proceed
         </button>
 
-        <!-- Holographic Floating 3D Title (front page only visual layer) -->
-        <div id="holo-title">
-            <div id="holo-title-inner" class="holo-glitch">
-                <span>E</span><span>R</span><span>A</span><span>S</span><span>U</span><span>R</span><span>E</span>
-            </div>
-            <p class="holo-subtitle">A story that reads you back.</p>
-        </div>
     </div>
 
     <!-- Main App Entry Point - Module Bundled by Vite -->

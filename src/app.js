@@ -15,6 +15,7 @@ import nlp from 'compromise';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import Character from './character/Character.js';
+import { getDreamApiKey, setDreamApiKey, askAlex } from './geminiAlex.js';
 
 // Register GSAP plugins
 gsap.registerPlugin(CSSPlugin);
@@ -119,6 +120,16 @@ console.warn = function(...args) {
   }
 };
 
+window.toggleAlexBgm = function() {
+  try {
+    const bgmEl = document.getElementById('alex-bgm');
+    if (!bgmEl) return;
+    bgmEl.muted = !bgmEl.muted;
+  } catch (e) {
+    console.warn('toggleAlexBgm failed', e);
+  }
+};
+
 console.log = function(...args) {
   if (!warningFilter(args[0])) {
     originalLog.apply(console, args);
@@ -201,12 +212,24 @@ window.addEventListener('unhandledrejection', (event) => {
 
 // Resume AudioContext on user gesture (required by browser autoplay policy)
 const resumeAudioContext = () => {
+  // Resume Tone.js AudioContext
   if (Tone && Tone.Destination && Tone.Destination.context) {
     const ctx = Tone.Destination.context.rawContext;
     if (ctx && ctx.state === 'suspended') {
       ctx.resume().catch(() => {});
     }
   }
+
+  // Also try to start background music (alex_theme.mp3) after a gesture
+  try {
+    const bgmEl = document.getElementById('alex-bgm');
+    if (bgmEl && bgmEl.paused) {
+      const p = bgmEl.play();
+      if (p && typeof p.then === 'function') {
+        p.catch(() => {});
+      }
+    }
+  } catch (e) {}
 };
 
 document.addEventListener('click', resumeAudioContext);
@@ -282,11 +305,11 @@ let lastCursorNorm = { x: 0, y: 0 };
 
 async function initDreamCharacter() {
   try {
-    // Three characters: left, center, right
+    // Three characters: center (main.glb), left, right
     const positions = [
-      new THREE.Vector3(-220, -140, 260),
-      new THREE.Vector3(0, -140, 260),
-      new THREE.Vector3(220, -140, 260)
+      new THREE.Vector3(0, -140, 260),      // primary guide (main.glb)
+      new THREE.Vector3(-220, -140, 260),   // secondary
+      new THREE.Vector3(220, -140, 260)     // secondary
     ];
 
     dreamCharacters = positions.map((pos) => new Character({ scene, camera, initialPosition: pos }));
@@ -362,7 +385,8 @@ let appState = {
   timeDistortion: 1.0,
   interfaceBreathing: true,
   narratorVolume: 0.3,
-  metamorphicState: 0
+  metamorphicState: 0,
+  alexConversation: []
 };
 
 // Handle for story typewriter so multiple calls don't overlap
@@ -372,6 +396,57 @@ let storyTypingInterval = null;
 function initializeDreamFeatures() {
   // Hook real dream features here later (breathing UI, time distortion, etc.)
 }
+
+// Optional: simple speech recognition for Alex (browser mic → text → Alex)
+let alexRecognition = null;
+
+window.alexStartMic = function() {
+  try {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Speech recognition is not supported in this browser.');
+      return;
+    }
+
+    if (alexRecognition) {
+      try { alexRecognition.stop(); } catch (e) {}
+      alexRecognition = null;
+    }
+
+    alexRecognition = new SpeechRecognition();
+    alexRecognition.lang = 'en-US';
+    alexRecognition.interimResults = false;
+    alexRecognition.maxAlternatives = 1;
+
+    alexRecognition.onresult = function(event) {
+      try {
+        const transcript = event.results[0][0].transcript || '';
+        const input = document.getElementById('alexUserMessage');
+        if (input) {
+          input.value = transcript;
+        }
+        if (transcript.trim()) {
+          if (window.askAlexMessage) {
+            window.askAlexMessage();
+          }
+        }
+      } catch (e) {}
+    };
+
+    alexRecognition.onerror = function() {
+      try { alexRecognition.stop(); } catch (e) {}
+      alexRecognition = null;
+    };
+
+    alexRecognition.onend = function() {
+      alexRecognition = null;
+    };
+
+    alexRecognition.start();
+  } catch (e) {
+    console.warn('alexStartMic failed', e);
+  }
+};
 
 // Simple text-to-speech helpers for reading the story aloud
 let currentUtterance = null;
@@ -456,6 +531,22 @@ async function initializeApp() {
     // Initialize Dream Features
     initializeDreamFeatures();
     console.log('✓ Dream Features initialized');
+
+    // Start user-provided background music (alex_theme.mp3) if available
+    try {
+      const bgmEl = document.getElementById('alex-bgm');
+      if (bgmEl) {
+        bgmEl.volume = 0.35;
+        const playPromise = bgmEl.play();
+        if (playPromise && typeof playPromise.then === 'function') {
+          playPromise.catch(() => {
+            // Ignore autoplay rejections; audio can still start after user gesture
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('alex_theme background music failed to start', e);
+    }
 
     // Fire-and-forget 3D character loading (does not block experience)
     initDreamCharacter();
@@ -675,17 +766,6 @@ function initializeArrival() {
     );
   }, 16);
 
-  // Ambient drone
-  try {
-    Tone.Transport.bpm.value = 60;
-    new Tone.PolySynth(Tone.Synth).toDestination();
-  } catch (e) {
-    console.warn('Tone initialization skipped');
-  }
-
-  // Also bring in the reactive 3D layer on the front page so the whole experience feels 3D
-  initReactive3D();
-
   // Show modal
   showModal(
     `<h2 style="color: #0ff; margin-bottom: 1rem;">ERASURE</h2>
@@ -893,6 +973,9 @@ function transitionToReading() {
   if (landingMoodSpheres && landingMoodSpheres.length) {
     landingMoodSpheres.forEach((s) => { s.visible = false; });
   }
+  
+  // Initialize the heavier reactive 3D layer only once we enter the reading phase
+  initReactive3D();
   
   // If a landing mood sphere was clicked, jump directly into that mood's story
   if (landingPreselectedMood && typeof window.selectMoodAndLoadStory === 'function') {
@@ -1960,6 +2043,102 @@ function loadPreviousStory(index) {
 
 // Expose for inline onclick handlers (history items)
 window.loadPreviousStory = loadPreviousStory;
+
+window.awakenAlex = function() {
+  try {
+    const input = document.getElementById('dreamApiKeyInput');
+    if (input && input.value.trim()) {
+      setDreamApiKey(input.value.trim());
+    }
+    const key = getDreamApiKey();
+    if (!key) {
+      alert('Please paste your Gemini API key first.');
+      return;
+    }
+    appState.alexConversation = appState.alexConversation || [];
+    console.log('Alex is awake inside ERASURE.');
+  } catch (e) {
+    console.warn('Awaken Alex failed', e);
+  }
+};
+
+window.askAlexMessage = async function() {
+  try {
+    const input = document.getElementById('alexUserMessage');
+    if (!input) return;
+    const text = String(input.value || '').trim();
+    if (!text) {
+      alert('Type something for Alex.');
+      return;
+    }
+
+    const key = getDreamApiKey();
+    if (!key) {
+      alert('Awaken Alex by adding your Gemini key first.');
+      return;
+    }
+
+    appState.alexConversation = appState.alexConversation || [];
+    const history = appState.alexConversation.map((m) => ({ user: m.user, alex: m.alex }));
+
+    let reply;
+    try {
+      reply = await askAlex(text, history);
+    } catch (e) {
+      console.error('Alex (Gemini) error:', e);
+      alert('Alex could not reach Gemini. Check your key and network.');
+      return;
+    }
+
+    appState.alexConversation.push({ user: text, alex: reply.replyText, mood: reply.mood, ts: Date.now() });
+
+    try {
+      if (typeof speakStoryText === 'function') {
+        speakStoryText(reply.replyText);
+      }
+    } catch (e) {
+      console.warn('Alex speak failed', e);
+    }
+
+    // Also let the primary 3D Dreamware character embody Alex when possible
+    try {
+      if (dreamCharactersLoaded && dreamCharacters && dreamCharacters.length) {
+        const primary = dreamCharacters[0] || dreamCharacters[1] || dreamCharacters[2];
+        if (primary && typeof primary.speak === 'function') {
+          primary.speak(reply.replyText);
+        }
+      }
+    } catch (e) {
+      console.warn('Alex 3D speak failed', e);
+    }
+
+    try {
+      const storyDisplay = document.getElementById('story-display');
+      if (storyDisplay) {
+        let log = storyDisplay.querySelector('#alex-chat-log');
+        if (!log) {
+          log = document.createElement('div');
+          log.id = 'alex-chat-log';
+          log.style.marginTop = '1.5rem';
+          log.style.borderTop = '1px solid rgba(0,255,255,0.3)';
+          log.style.paddingTop = '1rem';
+          storyDisplay.appendChild(log);
+        }
+        const block = document.createElement('div');
+        block.style.marginBottom = '0.8rem';
+        block.innerHTML = `<div style="color:#0ff;font-size:0.9rem;margin-bottom:0.3rem;">You → Alex</div><div style="color:#fff;font-size:0.95rem;white-space:pre-wrap;">${reply.replyText.replace(/</g, '&lt;')}</div>`;
+        log.appendChild(block);
+        storyDisplay.scrollTop = storyDisplay.scrollHeight;
+      }
+    } catch (e) {
+      console.warn('Alex UI log failed', e);
+    }
+
+    input.value = '';
+  } catch (e) {
+    console.error('askAlexMessage failed', e);
+  }
+};
 
 // ============ 3D CHARACTER ANIMATION SYSTEM ============
 // Dynamic character system with mood-based movement & behavior

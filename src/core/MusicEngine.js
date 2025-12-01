@@ -24,6 +24,9 @@ export class MusicEngine {
     this.midiData = [];
     this.readingSpeed = 1; // Words per second
     this.emotionalIntensity = 0.5;
+
+    this.ambientPart = null;
+    this.ambientStarted = false;
   }
 
   // Convert letter to note (A-Z maps to 0-25, mod 10 -> scale)
@@ -183,5 +186,48 @@ export class MusicEngine {
       twist: 'unexpected',
       intensity: Array.from({ length: 10 }, () => Math.random())
     };
+  }
+
+  // Simple, gentle ambient pad loop for background
+  async startAmbient() {
+    if (this.ambientStarted) return;
+    try {
+      await Tone.start();
+    } catch (e) {}
+
+    const chordProgression = [
+      ['C4', 'E4', 'G4'],
+      ['A3', 'C4', 'E4'],
+      ['F3', 'A3', 'C4'],
+      ['G3', 'B3', 'D4']
+    ];
+
+    const pad = this.pad;
+    let step = 0;
+
+    this.ambientPart = new Tone.Loop((time) => {
+      const chord = chordProgression[step % chordProgression.length];
+      chord.forEach((note) => {
+        pad.triggerAttackRelease(note, '4n', time, 0.25);
+      });
+      step += 1;
+    }, '2m');
+
+    Tone.Transport.bpm.value = 60;
+    this.ambientPart.start(0);
+    if (!Tone.Transport.state || Tone.Transport.state !== 'started') {
+      Tone.Transport.start();
+    }
+    this.ambientStarted = true;
+  }
+
+  stopAmbient() {
+    if (this.ambientPart) {
+      try {
+        this.ambientPart.stop();
+      } catch (e) {}
+      this.ambientPart = null;
+    }
+    this.ambientStarted = false;
   }
 }
